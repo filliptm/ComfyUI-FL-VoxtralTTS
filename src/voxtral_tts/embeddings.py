@@ -11,32 +11,29 @@ class MultiVocabEmbeddings(nn.Module):
 
     Each codebook has its own offset into a single flat embedding table.
     At each frame, all 37 codebook embeddings are summed into one vector.
+
+    The checkpoint has 9088 entries (padded), but the actual codebook layout
+    uses only 9022 entries:
+      semantic: 8192 + 2 special = 8194 entries
+      acoustic (x36): 21 + 2 special = 23 entries each = 828
+      Total used: 8194 + 828 = 9022
     """
 
     def __init__(self, total_entries: int, embedding_dim: int,
-                 codebook_sizes: List[int] = None):
+                 n_special: int = 2, semantic_size: int = 8192,
+                 acoustic_size: int = 21, n_acoustic: int = 36):
         super().__init__()
         self.embedding_dim = embedding_dim
         self.embeddings = nn.Embedding(total_entries, embedding_dim)
 
-        if codebook_sizes is not None:
-            offsets = [0]
-            for s in codebook_sizes:
-                offsets.append(offsets[-1] + s)
-            self.register_buffer("offsets", torch.tensor(offsets[:-1], dtype=torch.long))
-            self.n_codebooks = len(codebook_sizes)
-        else:
-            # Default Voxtral layout: offsets will be set from config
-            # semantic(8224) + 36 * acoustic(24) = 9088
-            semantic_size = 8224
-            acoustic_size = 24
-            n_acoustic = 36
-            sizes = [semantic_size] + [acoustic_size] * n_acoustic
-            offsets = [0]
-            for s in sizes:
-                offsets.append(offsets[-1] + s)
-            self.register_buffer("offsets", torch.tensor(offsets[:-1], dtype=torch.long))
-            self.n_codebooks = len(sizes)
+        # Compute offsets from ACTUAL codebook sizes (not padded)
+        sizes = [semantic_size + n_special]  # 8194
+        sizes += [acoustic_size + n_special] * n_acoustic  # 23 each
+        offsets = [0]
+        for s in sizes:
+            offsets.append(offsets[-1] + s)
+        self.register_buffer("offsets", torch.tensor(offsets[:-1], dtype=torch.long))
+        self.n_codebooks = len(sizes)
 
     def forward(self, codes: torch.Tensor) -> torch.Tensor:
         """Embed and sum across codebooks.
@@ -48,7 +45,6 @@ class MultiVocabEmbeddings(nn.Module):
             [B, embedding_dim] or [B, T, embedding_dim] summed embeddings
         """
         global_indices = codes + self.offsets.to(codes.device)
-        # Clamp to avoid OOB
         global_indices = global_indices.clamp(0, self.embeddings.num_embeddings - 1)
         all_embeds = self.embeddings(global_indices)
         return all_embeds.sum(dim=-2)
