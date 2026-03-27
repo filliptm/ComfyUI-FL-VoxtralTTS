@@ -16,7 +16,7 @@ class FL_VoxtralTTS_Generate:
 
     @classmethod
     def INPUT_TYPES(cls):
-        from modules.model_info import VOICES
+        from ..modules.model_info import VOICES
         return {
             "required": {
                 "model": ("VOXTRAL_MODEL",),
@@ -40,7 +40,7 @@ class FL_VoxtralTTS_Generate:
         }
 
     def generate(self, model, text, voice, max_frames, seed):
-        from modules.audio_utils import numpy_to_comfyui_audio, empty_audio
+        from ..modules.audio_utils import numpy_to_comfyui_audio, empty_audio
 
         pipeline = model["pipeline"]
 

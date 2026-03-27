@@ -25,7 +25,7 @@ class FL_VoxtralTTS_ModelLoader:
         }
 
     def load_model(self, device, dtype, force_reload):
-        from modules.loader import VoxtralLoader
+        from ..modules.loader import VoxtralLoader
 
         pbar = ProgressBar(3)
         pbar.update(1)
