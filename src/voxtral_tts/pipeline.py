@@ -83,26 +83,31 @@ class VoxtralTTSPipeline:
 
         # Load voice embedding
         voice_emb = self._load_voice_embedding(voice)  # [N, dim]
-        n_voice_frames = voice_emb.size(0)
 
-        # Tokenize text and build prompt
-        prompt_tokens = self.tokenizer.build_prompt_tokens(text, n_voice_frames)
+        # Tokenize text and build prompt using official SpeechRequest API
+        prompt_tokens = self.tokenizer.build_prompt_tokens(text, voice)
         token_ids = torch.tensor([prompt_tokens], dtype=torch.long, device=self.device)
 
         # Build input embeddings — replace AUDIO token positions with voice embeddings
         input_embeds = self.backbone.embed_tokens(token_ids)  # [1, L, dim]
 
-        # Positions 1..N (after BOS) are AUDIO placeholders → replace with voice
-        audio_start = 1
-        audio_end = audio_start + n_voice_frames
-        input_embeds[:, audio_start:audio_end, :] = voice_emb.unsqueeze(0)
+        # Find AUDIO placeholder positions and replace with voice embeddings
+        audio_start, audio_end = self.tokenizer.find_audio_token_positions(prompt_tokens)
+        n_voice_frames = audio_end - audio_start
+        input_embeds[:, audio_start:audio_end, :] = voice_emb[:n_voice_frames].unsqueeze(0)
 
         # Prefill: run prompt through LLM backbone
         hidden, cache = self.backbone(input_embeds=input_embeds, start_pos=0)
-
-        # The last hidden state is from BEGIN_AUDIO — start generating
-        llm_hidden = hidden[:, -1:, :]  # [1, 1, dim]
         pos = input_embeds.size(1)
+
+        # Feed initial AUDIO token (id=24) as first decode step
+        audio_token = torch.tensor([[self.config.audio_token_id]],
+                                    dtype=torch.long, device=self.device)
+        audio_embed = self.backbone.embed_tokens(audio_token)  # [1, 1, dim]
+        llm_hidden, cache = self.backbone(
+            input_embeds=audio_embed, start_pos=pos, cache=cache
+        )
+        pos += 1
 
         # Autoregressive generation loop
         all_codes = []

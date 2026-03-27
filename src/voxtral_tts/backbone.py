@@ -42,7 +42,7 @@ def apply_rotary_emb(xq: torch.Tensor, xk: torch.Tensor,
     # Reshape to pairs of 2 for complex multiplication
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
-    freqs = freqs_cis.unsqueeze(0).unsqueeze(0)  # [1, 1, seq, dim//2]
+    freqs = freqs_cis.unsqueeze(0).unsqueeze(2)  # [1, seq, 1, dim//2]
     xq_out = torch.view_as_real(xq_ * freqs).flatten(-2)
     xk_out = torch.view_as_real(xk_ * freqs).flatten(-2)
     return xq_out.to(xq.dtype), xk_out.to(xk.dtype)
@@ -80,11 +80,11 @@ class Attention(nn.Module):
             v = torch.cat([v_cache, v], dim=1)
         new_cache = (k, v)
 
-        # GQA: repeat KV heads
+        # GQA: repeat KV heads — each group of n_rep query heads shares one KV head
         if self.n_rep > 1:
-            k = k.unsqueeze(2).expand(B, k.size(1), self.n_rep, self.n_kv_heads, self.head_dim)
+            k = k[:, :, :, None, :].expand(B, k.size(1), self.n_kv_heads, self.n_rep, self.head_dim)
             k = k.reshape(B, k.size(1), self.n_heads, self.head_dim)
-            v = v.unsqueeze(2).expand(B, v.size(1), self.n_rep, self.n_kv_heads, self.head_dim)
+            v = v[:, :, :, None, :].expand(B, v.size(1), self.n_kv_heads, self.n_rep, self.head_dim)
             v = v.reshape(B, v.size(1), self.n_heads, self.head_dim)
 
         # Transpose to [B, heads, seq, dim]

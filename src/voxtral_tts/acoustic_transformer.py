@@ -48,9 +48,9 @@ class BidirectionalAttention(nn.Module):
         v = self.wv(x).view(B, L, self.n_kv_heads, self.head_dim).transpose(1, 2)
 
         if self.n_rep > 1:
-            k = k.unsqueeze(2).expand(B, self.n_kv_heads, self.n_rep, L, self.head_dim)
+            k = k[:, :, None, :, :].expand(B, self.n_kv_heads, self.n_rep, L, self.head_dim)
             k = k.reshape(B, self.n_heads, L, self.head_dim)
-            v = v.unsqueeze(2).expand(B, self.n_kv_heads, self.n_rep, L, self.head_dim)
+            v = v[:, :, None, :, :].expand(B, self.n_kv_heads, self.n_rep, L, self.head_dim)
             v = v.reshape(B, self.n_heads, L, self.head_dim)
 
         out = F.scaled_dot_product_attention(q, k, v, is_causal=False)
@@ -143,7 +143,7 @@ class FlowMatchingAcousticTransformer(nn.Module):
         n_special = self.args.n_special_tokens
         n_semantic = self.args.semantic_codebook_size
         # Mask invalid positions
-        logits[:, self.args.empty_audio_id] = float("-inf")  # EMPTY_AUDIO=0
+        logits[:, 0] = float("-inf")  # EMPTY_AUDIO=0
         logits[:, (n_special + n_semantic):] = float("-inf")  # padding
         return logits.argmax(dim=-1)
 
@@ -236,7 +236,7 @@ class FlowMatchingAcousticTransformer(nn.Module):
         semantic_code = self.predict_semantic(llm_hidden)  # [B]
 
         # Check for END_AUDIO
-        if (semantic_code == self.args.end_audio_id).all():
+        if (semantic_code == 1).all():  # END_AUDIO=1
             return None
 
         # Acoustic codes via flow matching

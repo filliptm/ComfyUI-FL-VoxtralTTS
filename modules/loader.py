@@ -20,7 +20,10 @@ def get_voxtral_models_dir() -> Path:
     """Get or create the VoxtralTTS model storage directory."""
     try:
         import folder_paths
-        tts_paths = folder_paths.get_folder_paths("tts")
+        try:
+            tts_paths = folder_paths.get_folder_paths("tts")
+        except (KeyError, AttributeError):
+            tts_paths = None
         if tts_paths:
             base = Path(tts_paths[0])
         else:
@@ -177,9 +180,13 @@ class VoxtralLoader:
         codec.to(device=torch_device, dtype=torch_dtype)
         codec.eval()
 
-        # Build audio embeddings
+        # Build audio embeddings — size from checkpoint
         logger.info("Building audio embeddings...")
-        audio_emb = MultiVocabEmbeddings.from_config(embedding_dim=config.transformer.dim)
+        emb_weight = parts["audio_embeddings"].get("embeddings.weight")
+        total_entries = emb_weight.shape[0] if emb_weight is not None else 9088
+        audio_emb = MultiVocabEmbeddings.from_config(
+            total_entries=total_entries, embedding_dim=config.transformer.dim
+        )
         audio_emb.load_state_dict(parts["audio_embeddings"], strict=False)
         audio_emb.to(device=torch_device, dtype=torch_dtype)
         audio_emb.eval()
