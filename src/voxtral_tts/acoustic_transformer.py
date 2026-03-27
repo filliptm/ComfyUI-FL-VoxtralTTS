@@ -179,11 +179,17 @@ class FlowMatchingAcousticTransformer(nn.Module):
 
     @torch.no_grad()
     def decode_acoustic(self, llm_hidden: torch.Tensor,
-                        generator: Optional[torch.Generator] = None) -> torch.Tensor:
-        """Generate 36 acoustic codes via 8-step Euler flow matching with CFG.
+                        generator: Optional[torch.Generator] = None,
+                        cfg_alpha: Optional[float] = None,
+                        noise_scale: Optional[float] = None,
+                        euler_steps: Optional[int] = None) -> torch.Tensor:
+        """Generate 36 acoustic codes via Euler flow matching with CFG.
 
         Args:
             llm_hidden: [B, dim] LLM hidden state
+            cfg_alpha: Override CFG strength (default from config: 1.2)
+            noise_scale: Override initial noise magnitude (default: 1.0)
+            euler_steps: Override number of Euler ODE steps (default: 8)
 
         Returns:
             [B, 36] integer acoustic codes (with special token offset applied)
@@ -191,12 +197,13 @@ class FlowMatchingAcousticTransformer(nn.Module):
         B = llm_hidden.size(0)
         device = llm_hidden.device
         dtype = llm_hidden.dtype
-        n_steps = self.args.acoustic_decode_iters
-        alpha = self.args.cfg_alpha
+        n_steps = euler_steps if euler_steps is not None else self.args.acoustic_decode_iters
+        alpha = cfg_alpha if cfg_alpha is not None else self.args.cfg_alpha
+        ns = noise_scale if noise_scale is not None else self.args.noise_scale
 
         # Start from noise
         x = torch.randn(B, self.args.n_acoustic_codebook, device=device, dtype=dtype,
-                         generator=generator) * self.args.noise_scale
+                         generator=generator) * ns
         timesteps = torch.linspace(0, 1, n_steps, device=device, dtype=dtype)
 
         # Zero LLM hidden for unconditional branch
@@ -223,11 +230,17 @@ class FlowMatchingAcousticTransformer(nn.Module):
 
     @torch.no_grad()
     def generate_frame(self, llm_hidden: torch.Tensor,
-                       generator: Optional[torch.Generator] = None) -> Optional[torch.Tensor]:
+                       generator: Optional[torch.Generator] = None,
+                       cfg_alpha: Optional[float] = None,
+                       noise_scale: Optional[float] = None,
+                       euler_steps: Optional[int] = None) -> Optional[torch.Tensor]:
         """Generate one complete audio frame (37 codes).
 
         Args:
             llm_hidden: [B, dim] hidden state from the last LLM position
+            cfg_alpha: Override CFG strength
+            noise_scale: Override initial noise magnitude
+            euler_steps: Override number of Euler ODE steps
 
         Returns:
             [B, 37] codes (semantic + 36 acoustic), or None if END_AUDIO
@@ -240,7 +253,9 @@ class FlowMatchingAcousticTransformer(nn.Module):
             return None
 
         # Acoustic codes via flow matching
-        acoustic_codes = self.decode_acoustic(llm_hidden, generator)  # [B, 36]
+        acoustic_codes = self.decode_acoustic(
+            llm_hidden, generator, cfg_alpha, noise_scale, euler_steps
+        )  # [B, 36]
 
         # Combine: [semantic, acoustic_0, acoustic_1, ..., acoustic_35]
         return torch.cat([semantic_code.unsqueeze(-1), acoustic_codes], dim=-1)

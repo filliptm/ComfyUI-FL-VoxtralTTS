@@ -61,6 +61,8 @@ class VoxtralTTSPipeline:
     @torch.no_grad()
     def generate(self, text: str, voice: str = "casual_male",
                  max_frames: int = 2048, seed: int = -1,
+                 cfg_alpha: float = 1.2, noise_scale: float = 1.0,
+                 euler_steps: int = 8,
                  progress_callback: Optional[Callable[[int, int], None]] = None
                  ) -> tuple[np.ndarray, int]:
         """Generate speech from text.
@@ -70,6 +72,9 @@ class VoxtralTTSPipeline:
             voice: Preset voice name
             max_frames: Maximum audio frames to generate
             seed: Random seed (-1 for random)
+            cfg_alpha: Classifier-free guidance strength (1.2 default)
+            noise_scale: Initial noise magnitude for flow matching (1.0 default)
+            euler_steps: Number of Euler ODE steps (8 default)
             progress_callback: Optional callback(current_frame, max_frames)
 
         Returns:
@@ -116,7 +121,9 @@ class VoxtralTTSPipeline:
             h = llm_hidden[:, -1, :]  # [1, dim]
 
             # Generate one audio frame (37 codes)
-            codes = self.acoustic_transformer.generate_frame(h, generator)
+            codes = self.acoustic_transformer.generate_frame(
+                h, generator, cfg_alpha, noise_scale, euler_steps
+            )
 
             if codes is None:
                 # END_AUDIO predicted

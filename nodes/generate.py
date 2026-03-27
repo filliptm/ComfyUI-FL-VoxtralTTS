@@ -25,21 +25,40 @@ class FL_VoxtralTTS_Generate:
                     "default": "Hello, this is a test of the Voxtral text to speech system.",
                 }),
                 "voice": (VOICES, {"default": "casual_male"}),
+                "seed": ("INT", {
+                    "default": -1,
+                    "min": -1,
+                    "max": 2**63 - 1,
+                }),
                 "max_frames": ("INT", {
                     "default": 2048,
                     "min": 128,
                     "max": 4096,
                     "step": 64,
                 }),
-                "seed": ("INT", {
-                    "default": -1,
-                    "min": -1,
-                    "max": 2**63 - 1,
+                "cfg_alpha": ("FLOAT", {
+                    "default": 1.2,
+                    "min": 0.0,
+                    "max": 3.0,
+                    "step": 0.05,
+                }),
+                "noise_scale": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.0,
+                    "max": 2.0,
+                    "step": 0.05,
+                }),
+                "euler_steps": ("INT", {
+                    "default": 8,
+                    "min": 2,
+                    "max": 32,
+                    "step": 1,
                 }),
             },
         }
 
-    def generate(self, model, text, voice, max_frames, seed):
+    def generate(self, model, text, voice, seed, max_frames,
+                 cfg_alpha, noise_scale, euler_steps):
         from ..modules.audio_utils import numpy_to_comfyui_audio, empty_audio
 
         pipeline = model["pipeline"]
@@ -55,6 +74,9 @@ class FL_VoxtralTTS_Generate:
                 voice=voice,
                 max_frames=max_frames,
                 seed=seed,
+                cfg_alpha=cfg_alpha,
+                noise_scale=noise_scale,
+                euler_steps=euler_steps,
                 progress_callback=on_progress,
             )
             audio = numpy_to_comfyui_audio(audio_np, sample_rate)
