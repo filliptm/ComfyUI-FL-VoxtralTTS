@@ -7,6 +7,8 @@ ComfyUI nodes for Mistral's Voxtral-4B text-to-speech model with direct PyTorch 
 
 ![Workflow Preview](assets/image.png)
 
+> **Note:** Voxtral-4B does not currently provide a speaker embedding model, so voice cloning is not supported. Generation is limited to the 20 preset voices included with the model. If Mistral releases an embedding model in the future, voice cloning support will be added.
+
 ## Features
 
 - **Direct PyTorch Inference** - Full local TTS pipeline, no external servers required
