@@ -3,7 +3,15 @@ name = "comfyui-fl-voxtral-tts"
 description = "ComfyUI nodes for Mistral Voxtral-4B TTS with direct PyTorch inference. Supports 20 preset voices across 9 languages on CUDA, MPS, and CPU."
 version = "1.0.0"
 license = { text = "Apache-2.0" }
-dependencies = []
+dependencies = [
+    "torch>=2.0.0",
+    "torchaudio>=2.0.0",
+    "mistral_common>=1.10.0",
+    "safetensors",
+    "huggingface_hub",
+    "soundfile",
+    "numpy",
+]
 
 [project.urls]
 Repository = "https://github.com/filliptm/ComfyUI-FL-VoxtralTTS"

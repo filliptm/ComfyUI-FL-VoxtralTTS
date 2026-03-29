@@ -1,0 +1,156 @@
+{
+  "id": "175eacf9-bbc5-4de4-97eb-4dad20d953a1",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "FL_VoxtralTTS_ModelLoader",
+      "pos": [
+        -2836.2251044180653,
+        432.00864817294
+      ],
+      "size": [
+        292.413671875,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "VOXTRAL_MODEL",
+          "links": [
+            3
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FL_VoxtralTTS_ModelLoader"
+      },
+      "widgets_values": [
+        "auto",
+        "bfloat16",
+        false
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 4,
+      "type": "FL_VoxtralTTS_Generate",
+      "pos": [
+        -2830.9361733632413,
+        594.6912983678593
+      ],
+      "size": [
+        400,
+        256
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "VOXTRAL_MODEL",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            4
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FL_VoxtralTTS_Generate"
+      },
+      "widgets_values": [
+        "Hello, this is a test of the Voxtral text to speech system.",
+        "casual_male",
+        42,
+        "fixed",
+        2048,
+        1.2,
+        1,
+        8
+      ],
+      "color": "#16727c",
+      "bgcolor": "#4F0074"
+    },
+    {
+      "id": 3,
+      "type": "SaveAudioMP3",
+      "pos": [
+        -2365.9178937415213,
+        596.0529957652022
+      ],
+      "size": [
+        392.2139629760936,
+        152.8726775593393
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 4
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.17.0",
+        "Node name for S&R": "SaveAudioMP3"
+      },
+      "widgets_values": [
+        "audio/ComfyUI",
+        "V0"
+      ]
+    }
+  ],
+  "links": [
+    [
+      3,
+      1,
+      0,
+      4,
+      0,
+      "VOXTRAL_MODEL"
+    ],
+    [
+      4,
+      4,
+      0,
+      3,
+      0,
+      "AUDIO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8247739447807643,
+      "offset": [
+        3435.8578985860067,
+        -70.71749764686963
+      ]
+    },
+    "frontendVersion": "1.41.21",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
