@@ -5,7 +5,7 @@ ComfyUI nodes for Mistral's Voxtral-4B text-to-speech model with direct PyTorch 
 [![Voxtral](https://img.shields.io/badge/Voxtral--4B-Mistral%20AI-blue?style=for-the-badge&logo=github&logoColor=white)](https://huggingface.co/mistralai/Voxtral-4B-TTS-2603)
 [![Patreon](https://img.shields.io/badge/Patreon-Support%20Me-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://www.patreon.com/Machinedelusions)
 
-![Workflow Preview](assets/Screenshot%202026-03-29%20at%209.36.01%20AM.png)
+![Workflow Preview](assets/image.png)
 
 ## Features
 
